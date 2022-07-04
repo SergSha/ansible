@@ -739,7 +739,7 @@ nginx                      : ok=5    changed=2    unreachable=0    failed=0    s
 <p>Для начала на хосте должны быть установлены Git и Ansible.</p>
 <p>Далее запускаем последовательно следующие команды:</p>
 <ol>
-  <li>git clone  https://github.com/SergSha/ansible</li>
+  <li>git clone https://github.com/SergSha/ansible.git</li>
   <li>cd ./ansible/</li>
   <li>vagrant up</li>
   <li>ansible-playbook playbooks/nginx.yml</li>
