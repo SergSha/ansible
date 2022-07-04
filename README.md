@@ -744,7 +744,7 @@ nginx                      : ok=5    changed=2    unreachable=0    failed=0    s
 
 <h4>Инструкция по запуску стенда NGINX с помощью Ansible</h4>
 
-<p>Для начала на хосте должны быть установлены Git и Ansible.</p>
+<p>На хосте должны быть установлены Git, Vagrant и Ansible.</p>
 <p>Далее запускаем последовательно следующие команды:</p>
 <ol>
   <li>git clone https://github.com/SergSha/ansible.git</li>
