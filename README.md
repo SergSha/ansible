@@ -732,7 +732,15 @@ nginx                      : ok=5    changed=2    unreachable=0    failed=0    s
 
 ![image](https://user-images.githubusercontent.com/96518320/177217884-78b19404-fefa-4747-b8a5-f52d31e4a043.png)
 
-<p>Всё, стенд готов.</p>
+<p>Всё, стенд NGINX готов со следующими требуемыми условиями:</p>
+
+<ul>
+  <li>используется модуль yum/apt;</li>
+  <li>конфигурационные файлы берутся из шаблона jinja2 с перемененными;</li>
+  <li>после установки nginx в режиме enabled в systemd;</li>
+  <li>используется notify для старта nginx после установки;</li>
+  <li>сайт слушает на нестандартном порту - 8080, для этого используется переменные в Ansible.</li>
+</ul>
 
 <h4>Инструкция по запуску стенда NGINX с помощью Ansible</h4>
 
@@ -743,4 +751,5 @@ nginx                      : ok=5    changed=2    unreachable=0    failed=0    s
   <li>cd ./ansible/</li>
   <li>vagrant up</li>
   <li>ansible-playbook playbooks/nginx.yml</li>
+  <li>в адресной строке браузера ввести http://192.168.56.150:8080</li>
 </ol>
