@@ -883,6 +883,7 @@ vars:
 
 - name: NGINX | Create NGINX config file from template
   template:
+    src: nginx.conf.j2
     dest: /etc/nginx/nginx.conf
   notify:
     - reload nginx
