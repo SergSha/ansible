@@ -5,7 +5,7 @@
 <ol>
   <li>git clone https://github.com/SergSha/ansible.git && cd ./ansible && vagrant up</li>
   <li>в адресной строке браузера ввести http://192.168.56.150:8080</li>
-</ol>
+</ol><br />
 
 <h3>### Ansible ###</h3>
 
@@ -856,8 +856,7 @@ end</pre>
 ---
 # vars file for nginx
 
-vars:
-  nginx_listen_port: 8080</pre>
+nginx_listen_port: 8080</pre>
 
 <pre>[user@localhost roles]$ vi ./nginx/tasks/main.yml
 ---
@@ -1002,6 +1001,16 @@ end</pre>
 
 <p>Теперь запустим vagrant up:</p>
 
-<pre></pre>
+<pre>[user@localhost ansible]$ vagrant up
+...
+PLAY RECAP *********************************************************************
+nginx                      : ok=6    changed=5    unreachable=0    failed=0    skipped=0    rescued=0    ignored=0   
 
+==> nginx: Running provisioner: shell...
+    nginx: Running: inline script
+[user@localhost ansible]$</pre>
+
+<p>Как видим, система успешно запустилась, можно проверить в браузере, введя в адресной строке 192.168.56.150:8080:</p>
+
+![image](https://user-images.githubusercontent.com/96518320/182724546-ca30299c-bb18-4d8d-b045-26b1ad79dd90.png)
 
