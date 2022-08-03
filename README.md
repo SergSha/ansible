@@ -1,3 +1,12 @@
+<h4>Инструкция по запуску стенда NGINX с помощью Ansible</h4>
+
+<p>На хосте должны быть установлены Git, Vagrant и Ansible.</p>
+<p>Далее запускаем последовательно следующие команды:</p>
+<ol>
+  <li>git clone https://github.com/SergSha/ansible.git && cd ./ansible && vagrant up</li>
+  <li>в адресной строке браузера ввести http://192.168.56.150:8080</li>
+</ol>
+
 <h3>### Ansible ###</h3>
 
 <p>Первые шаги с Ansible</p>
@@ -793,13 +802,205 @@ Vagrant.configure("2") do |config|
   end
 end</pre>
 
-<h4>Инструкция по запуску стенда NGINX с помощью Ansible</h4>
+<h4>Использование ролей в ansible.</h4>
 
-<p>На хосте должны быть установлены Git, Vagrant и Ansible.</p>
-<p>Далее запускаем последовательно следующие команды:</p>
-<ol>
-  <li>git clone https://github.com/SergSha/ansible.git</li>
-  <li>cd ./ansible/</li>
-  <li>vagrant up</li>
-  <li>в адресной строке браузера ввести http://192.168.56.150:8080</li>
-</ol>
+<p>В текущей директории создадим каталог roles:</p>
+
+<pre>[user@localhost ansible]$ mkdir ./roles
+[user@localhost ansible]$</pre>
+
+<p>Перейдём в этот каталог:</p>
+
+<pre>[user@localhost ansible]$ cd ./roles/
+[user@localhost roles]$</pre>
+
+<p>Следующим шагом запустим волшебную команду ansible-galaxy:</p>
+
+<pre>[user@localhost roles]$ ansible-galaxy init nginx
+- Role nginx was created successfully
+[user@localhost roles]$</pre>
+
+<p>Эта команда создаёт структуру каталогов и файлов следующим образом:</p>
+
+<pre>[user@localhost roles]$ tree
+.
+└── nginx
+    ├── defaults
+    │   └── main.yml
+    ├── files
+    ├── handlers
+    │   └── main.yml
+    ├── meta
+    │   └── main.yml
+    ├── README.md
+    ├── tasks
+    │   └── main.yml
+    ├── templates
+    ├── tests
+    │   ├── inventory
+    │   └── test.yml
+    └── vars
+        └── main.yml
+
+9 directories, 8 files
+[user@localhost roles]$</pre>
+
+<p>Скопируем j2-файл из директории templates в nginx/templates:</p>
+
+<pre>[user@localhost roles]$ cp ../templates/nginx.conf.j2 ./nginx/templates/
+[user@localhost roles]$</pre>
+
+<p>Переносим секции с playbooks/nginx.yml по соответстующим файлам main.yml в nginx:</p>
+
+<pre>[user@localhost roles]$ vi ./nginx/vars/main.yml
+---
+# vars file for nginx
+
+vars:
+  nginx_listen_port: 8080</pre>
+
+<pre>[user@localhost roles]$ vi ./nginx/tasks/main.yml
+---
+# tasks file for nginx
+
+- name: NGINX | Install EPEL Repo package from standart repo
+  yum:
+    name: epel-release
+    state: present
+  tags:
+    - epel-package
+    - packages
+
+- name: NGINX | Install NGINX package from EPEL Repo
+  yum:
+    name: nginx
+    state: latest
+  notify:
+    - restart nginx
+  tags:
+    - nginx-package
+    - packages
+
+- name: NGINX | Create NGINX config file from template
+  template:
+    dest: /etc/nginx/nginx.conf
+  notify:
+    - reload nginx
+  tags:
+    - nginx-configuration</pre>
+
+<pre>[user@localhost roles]$ vi ./nginx/handlers/main.yml 
+---
+# handlers file for nginx
+
+- name: restart nginx
+  systemd:
+    name: nginx
+    state: restarted
+    enabled: yes
+    
+- name: reload nginx
+  systemd:
+    name: nginx
+    state: reloaded</pre>
+
+<p>Переходим на уровень выше и создадим новый playbook файл nginx-role.yml::</p>
+
+<pre>[user@localhost roles]$ cd ..
+[user@localhost ansible]$ vi ./nginx-role.yml</pre>
+
+<pre>---
+- name: NGINX | Install and configure NGINX
+  hosts: nginx
+  become: true
+  roles:
+    - nginx</pre>
+
+<p>В Vagrantfile исправим значение в строке ansible.playbook на ./nginx-role.yml:</p>
+
+<pre>[user@localhost ansible]$ vi ./Vagrantfile</pre>
+
+<pre># -*- mode: ruby -*-
+# vim: set ft=ruby :
+
+MACHINES = {
+  :nginx => {
+        :box_name => "centos/7",
+        :ip_addr => '192.168.56.150'
+  }
+}
+
+Vagrant.configure("2") do |config|
+
+  config.vm.provision "ansible" do |ansible|
+    ansible.verbose = "vvv"
+    ansible.playbook = "./nginx-role.yml"
+    ansible.become = "true"
+  end
+
+  MACHINES.each do |boxname, boxconfig|
+
+      config.vm.define boxname do |box|
+
+          box.vm.box = boxconfig[:box_name]
+          box.vm.host_name = boxname.to_s
+
+          box.vm.network "private_network", ip: boxconfig[:ip_addr]
+
+          box.vm.provider :virtualbox do |vb|
+            vb.customize ["modifyvm", :id, "--memory", "200"]
+          end
+
+          box.vm.provision "shell", inline: <<-SHELL
+            mkdir -p ~root/.ssh; cp ~vagrant/.ssh/auth* ~root/.ssh
+            sed -i '65s/PasswordAuthentication no/PasswordAuthentication yes/g' /etc/ssh/sshd_config
+            systemctl restart sshd
+          SHELL
+
+      end
+  end
+end</pre>
+
+<p>Структура каталогов и файлов теперь выглядит следующим образом:</p>
+
+<pre>[user@localhost ansible]$ tree
+.
+├── ansible.cfg
+├── nginx-role.yml
+├── playbooks
+│   └── nginx.yml
+├── README.md
+├── roles
+│   └── nginx
+│       ├── defaults
+│       │   └── main.yml
+│       ├── files
+│       ├── handlers
+│       │   └── main.yml
+│       ├── meta
+│       │   └── main.yml
+│       ├── README.md
+│       ├── tasks
+│       │   └── main.yml
+│       ├── templates
+│       │   └── nginx.conf.j2
+│       ├── tests
+│       │   ├── inventory
+│       │   └── test.yml
+│       └── vars
+│           └── main.yml
+├── staging
+│   └── hosts
+│       └── inventory
+├── templates
+│   └── nginx.conf.j2
+└── Vagrantfile
+
+14 directories, 16 files
+[user@localhost ansible]$</pre>
+
+<p>Теперь запустим vagrant up:</p>
+
+<pre></pre>
+
+
