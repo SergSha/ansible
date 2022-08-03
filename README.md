@@ -742,6 +742,57 @@ nginx                      : ok=5    changed=2    unreachable=0    failed=0    s
   <li>сайт слушает на нестандартном порту - 8080, для этого используется переменные в Ansible.</li>
 </ul>
 
+<p>Для того чтобы ansible автоматически запустился после команды "vagrant up", в секцию "Vagrant.configure("2") do |config|" Vagrantfile добавим следующие строки:</p>
+
+<pre>  config.vm.provision "ansible" do |ansible|
+    ansible.verbose = "vvv"
+    ansible.playbook = "./playbooks/nginx.yml"
+    ansible.become = "true"
+  end</pre>
+  
+<p>В итоге получим такой Vagrantfile:</p>
+
+<pre># -*- mode: ruby -*-
+# vim: set ft=ruby :
+
+MACHINES = {
+  :nginx => {
+        :box_name => "centos/7",
+        :ip_addr => '192.168.56.150'
+  }
+}
+
+Vagrant.configure("2") do |config|
+
+  config.vm.provision "ansible" do |ansible|
+    ansible.verbose = "vvv"
+    ansible.playbook = "./playbooks/nginx.yml"
+    ansible.become = "true"
+  end
+
+  MACHINES.each do |boxname, boxconfig|
+
+      config.vm.define boxname do |box|
+
+          box.vm.box = boxconfig[:box_name]
+          box.vm.host_name = boxname.to_s
+
+          box.vm.network "private_network", ip: boxconfig[:ip_addr]
+
+          box.vm.provider :virtualbox do |vb|
+            vb.customize ["modifyvm", :id, "--memory", "200"]
+          end
+          
+          box.vm.provision "shell", inline: <<-SHELL
+            mkdir -p ~root/.ssh; cp ~vagrant/.ssh/auth* ~root/.ssh
+            sed -i '65s/PasswordAuthentication no/PasswordAuthentication yes/g' /etc/ssh/sshd_config
+            systemctl restart sshd
+          SHELL
+
+      end
+  end
+end</pre>
+
 <h4>Инструкция по запуску стенда NGINX с помощью Ansible</h4>
 
 <p>На хосте должны быть установлены Git, Vagrant и Ansible.</p>
@@ -750,6 +801,5 @@ nginx                      : ok=5    changed=2    unreachable=0    failed=0    s
   <li>git clone https://github.com/SergSha/ansible.git</li>
   <li>cd ./ansible/</li>
   <li>vagrant up</li>
-  <li>ansible-playbook playbooks/nginx.yml</li>
   <li>в адресной строке браузера ввести http://192.168.56.150:8080</li>
 </ol>
